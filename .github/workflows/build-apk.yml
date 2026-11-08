@@ -42,8 +42,11 @@ jobs:
           const fs = require('node:fs');
           const vm = require('node:vm');
           const html = fs.readFileSync('index.html', 'utf8');
-          const scripts = [...html.matchAll(/<script\\b[^>]*>([\\s\\S]*?)<\\/script>/gi)]
-            .map(m => m[1]).filter(s => s.trim());
+          const scripts = html.split('<script').slice(1).map(chunk => {
+            const open = chunk.indexOf('>');
+            const close = chunk.indexOf('</script>');
+            return open >= 0 && close > open ? chunk.slice(open + 1, close) : '';
+          }).filter(s => s.trim());
           if (!scripts.length) throw new Error('No inline game scripts found');
           scripts.forEach((source, i) => new vm.Script(source, { filename: `inline-script-${i + 1}.js` }));
           for (const token of ['function save()', 'function load()', 'function endMatch()', 'window.onload']) {
